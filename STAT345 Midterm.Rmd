@@ -58,7 +58,7 @@ teamsdata <- function(x) {
 animated_plot1 <- ggplot(team_data, aes(x = locationX, y = locationY)) + # Plots the shot locations
   geom_point(show.legend = T, alpha=.7) +
   labs(color = "Made or Missed") + # Changes legend title
-  theme_bw() +
+  theme_classic() +
   transition_time(yearSeason) + # Animates plot by year
   labs(title ="Milwaukee Bucks Shots by Year", subtitle = "Year: {frame_time}") + # Adds year label to animation
   shadow_wake(wake_length = .1) +
