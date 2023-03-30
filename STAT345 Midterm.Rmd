@@ -1,0 +1,294 @@
+---
+title: "STAT345 Midterm"
+author: "Olivia Bojesen"
+date: "2023-03-31"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part 1
+
+```{r, message=FALSE, warning=FALSE, echo = FALSE}
+
+library(devtools)
+devtools::install_github("abresler/nbastatR", force = TRUE)
+library(nbastatR) # Package for shots data
+#Sys.setenv("VROOM_CONNECTION_SIZE" = 131072*2)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(gganimate)
+
+# Packages for court plot
+library(grid)
+library(jpeg)
+library(RCurl)
+
+colors <- c("#00471B", "#DCC18E")  # Colors to resemble the Bucks team colors (actual gold color used for the Bucks was too light)
+
+# Half court image from https://thedatagame.com.au/2015/09/27/how-to-create-nba-shot-charts-in-r/
+courtImg.URL <- "https://thedatagame.files.wordpress.com/2016/03/nba_court.jpg"
+court <- rasterGrob(readJPEG(getURLContent(courtImg.URL)),
+           width=unit(1,"npc"), height=unit(1,"npc"))
+
+################################
+
+teamsdata <- function(x) {
+  
+  # Creates an animated plot showing shot locations by the Milwaukee Bucks over the years specified and whether     the shot was missed or made
+  # Inputs: x, a numeric vector of years
+  # Outputs: animated plot of shots for each year
+  
+  # Initializing dataframes used in function
+  team_data <- data.frame()
+  dat <- data.frame()
+  
+  for(i in 1:length(x)) { # Iterates through all years in vector x
+
+    dat <- teams_shots(teams = "Milwaukee Bucks", seasons = x[i]) # Assigns shots data from year i to dataframe dat
+    team_data <- rbind(team_data, dat) # Row binds the existing team_data dataset with dat (data from the ith iteration)
+
+  }
+
+  team_data <-team_data[c("yearSeason", "locationX", "locationY", "typeEvent")] # Keeps only variables of interest
+  
+animated_plot1 <- ggplot(team_data, aes(x = locationX, y = locationY)) + # Plots the shot locations
+  geom_point(show.legend = T, alpha=.7) +
+  labs(color = "Made or Missed") + # Changes legend title
+  theme_bw() +
+  transition_time(yearSeason) + # Animates plot by year
+  labs(title ="Milwaukee Bucks Shots by Year", subtitle = "Year: {frame_time}") + # Adds year label to animation
+  shadow_wake(wake_length = .1) +
+  annotation_custom(court, -250, 250, -50, 420) + # Plots the court (found at link above)
+      geom_point(alpha = .6, size = .7, aes(color = typeEvent)) +
+      xlim(-250, 250) +
+      ylim(-50, 420) +
+      coord_fixed() + # Fixes distortion of court
+        theme(axis.title.x = element_blank(), # Removes axis labels
+             axis.title.y = element_blank(),
+             axis.text.x = element_blank(),
+             axis.text.y = element_blank()) +
+  scale_color_manual(values = colors) # Uses Bucks colors specified above for missed/made shots
+
+animate(animated_plot1, nframes = length(x), fps  =  1) # Produces 1 plot for each year and each plot displays for 1 second
+  
+}
+
+years <- seq(from = 1997, to = 2023, by = 1)
+teamsdata(years) # Creates animated plot for years 1997 to 2023 using the teamsdata function
+
+```
+
+
+## Part 2
+
+# Findings: 
+- More shots are now being taken in the area closest to the basket and these shots tend to be made more than missed.
+- Not many shots are taken in the space directly inside of the 3-point arc.
+- Many of the shots inside the 3-point arc follow a similar shape to that of the arc itself, especially from 1997 to 2017.
+- After 2017, shots taken inside the 3-point arc are more scattered and occur closer to the lane and basket.
+- As the years progress, the shot locations gradually migrate outwards.
+- For many years, there is a high concentration of shots taken in the corners outside of the 3-point arc.
+- Very few shots are taken past the area around the 3-point arc.
+
+# Further Reading:
+The concentration of shots taken in the area closest to the basket has had a large increase starting in 2011 and continues to be very concentrated from then on. Generally, there appear to be more shots made in this area than missed. As the plots show, directly inside of the 3-point arc there is an area of mostly white space following the same curved shape as the arc has. Many players likely try not to shoot from this area, since they could back up a little and get 3 points rather than 2 or they could move closer and have a better shot. Right after this area there exists another player-made arc where there is a higher concentration of shots taken. This pattern is especially apparent in the years 1997 to 2017. After 2017, the shots inside the arc don't have this distinct pattern. The shots are more scattered and tend to be taken more inwards, toward the lane. There is also an increased concentration of 3-point shots taken in later years and, among many years, especially the later ones, many shots are taken to the sides of the basket, closest to the sidelines. There are very few shots taken past the highly concentrated area of shots right outside the 3-point arc and of these shots, most are not made.
+
+
+## Part 3
+
+```{r, eval = FALSE}
+
+library(devtools)
+devtools::install_github("abresler/nbastatR", force = TRUE)
+library(nbastatR) # Package for shots data
+#Sys.setenv("VROOM_CONNECTION_SIZE" = 131072*2)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(gganimate)
+
+# Packages for court plot
+library(grid)
+library(jpeg)
+library(RCurl)
+
+colors <- c("#00471B", "#DCC18E")  # Colors to resemble the Bucks team colors (actual gold color used for the Bucks was too light)
+
+# Half court image from https://thedatagame.com.au/2015/09/27/how-to-create-nba-shot-charts-in-r/
+courtImg.URL <- "https://thedatagame.files.wordpress.com/2016/03/nba_court.jpg"
+court <- rasterGrob(readJPEG(getURLContent(courtImg.URL)),
+           width=unit(1,"npc"), height=unit(1,"npc"))
+
+################################
+
+teamsdata <- function(x) {
+  
+  # Creates an animated plot showing shot locations by the Milwaukee Bucks over the years specified and whether the shot was missed or made
+  # Inputs: x, a numeric vector of years
+  # Outputs: animated plot of shots for each year
+  
+  # Initializing dataframes used in function
+  team_data <- data.frame()
+  dat <- data.frame()
+  
+  for(i in 1:length(x)) { # Iterates through all years in vector x
+
+    dat <- teams_shots(teams = "Milwaukee Bucks", seasons = x[i]) # Assigns shots data from year i to dataframe dat
+    team_data <- rbind(team_data, dat) # Row binds the existing team_data dataset with dat (data from the ith iteration)
+
+  }
+
+  team_data <-team_data[c("yearSeason", "locationX", "locationY", "typeEvent")] # Keeps only variables of interest
+  
+animated_plot1 <- ggplot(team_data, aes(x = locationX, y = locationY)) + # Plots the shot locations
+  geom_point(show.legend = T, alpha=.7) +
+  labs(color = "Made or Missed") + # Changes legend title
+  theme_bw() +
+  transition_time(yearSeason) + # Animates plot by year
+  labs(title ="Milwaukee Bucks Shots by Year", subtitle = "Year: {frame_time}") + # Adds year label to animation
+  shadow_wake(wake_length = .1) +
+  annotation_custom(court, -250, 250, -50, 420) + # Plots the court (found at link above)
+      geom_point(alpha = .6, size = .7, aes(color = typeEvent)) +
+      xlim(-250, 250) +
+      ylim(-50, 420) +
+      coord_fixed() + # Fixes distortion of court
+        theme(axis.title.x = element_blank(), # Removes axis labels
+             axis.title.y = element_blank(),
+             axis.text.x = element_blank(),
+             axis.text.y = element_blank()) +
+  scale_color_manual(values = colors) # Uses Bucks colors specified above for missed/made shots
+
+animate(animated_plot1, nframes = length(x), fps  =  1) # Produces 1 plot for each year and each plot displays for 1 second
+  
+}
+
+years <- seq(from = 1997, to = 2023, by = 1)
+teamsdata(years) # Creates animated plot for years 1997 to 2023 using the teamsdata function
+
+
+```
+
+
+## Part 4
+
+```{r, message=FALSE, warning=FALSE}
+
+library(rvest)
+library(gridExtra)
+
+# Salary data for the 1999-2000 season (corresponds with shots data used above for the year 2000)
+s2000 <- read_html("https://hoopshype.com/salaries/milwaukee_bucks/1999-2000/") # Getting data from the hoopshype website on players salaries
+tab1 <- s2000 %>% html_nodes("table") # Extracting nodes
+table2000 <- tab1 %>% html_table %>% .[1] # Selects the first node which has the table needed
+table2000 <- data.frame(table2000) # Converts table into a dataframe
+table2000 <- table2000 %>%
+  slice(2:17) %>% # Removes first row (which has column names) and last row (which has totals)
+    mutate("yearSeason" = rep(2000)) %>% # Adds a column for year
+  rename("namePlayer" = Player.Salaries, "Salary" = Player.Salaries.1, "adjSalary" = Player.Salaries.2) # Renaming columns
+
+# Salary data for the 2009-2010 season
+s2010 <- read_html("https://hoopshype.com/salaries/milwaukee_bucks/2009-2010/")
+tab2 <- s2010 %>% html_nodes("table")
+table2010 <- tab2 %>% html_table %>% .[1]
+table2010 <- data.frame(table2010)
+table2010 <- table2010 %>%
+  slice(2:17) %>%
+  mutate("yearSeason" = rep(2010)) %>%
+  rename("namePlayer" = Player.Salaries, "Salary" = Player.Salaries.1, "adjSalary" = Player.Salaries.2)
+
+# Salary data for the 2019-2020 season
+s2020 <- read_html("https://hoopshype.com/salaries/milwaukee_bucks/2019-2020/")
+tab3 <- s2020 %>% html_nodes("table")
+table2020 <- tab3 %>% html_table %>% .[1]
+table2020 <- data.frame(table2020)
+table2020 <- table2020 %>%
+  slice(2:17) %>%
+  mutate("yearSeason" = rep(2020)) %>%
+  rename("namePlayer" = Player.Salaries, "Salary" = Player.Salaries.1, "adjSalary" = Player.Salaries.2)
+
+
+################################
+
+teamsdata2 <- function(y) {
+  
+  # Creates two plots of shot locations for missed and made shots for each year, with color indicating the salary of the player who took the shot
+  # Inputs: y, a numeric vector of years
+  # Outputs: one plot for shots made and one plot for shots missed for each year, 6 plots total
+  
+  team_data2 <- data.frame()
+  dat2 <- data.frame()
+  
+  for(i in 1:length(y)) { # Iterates through each year in vector y
+
+    dat2 <- teams_shots(teams = "Milwaukee Bucks", seasons = y[i]) # 
+    team_data2 <- rbind(team_data2, dat2)
+
+  }
+
+salary_data1 <- rbind(table2000, table2010, table2020)
+
+salary_data1 <- team_data2[c("namePlayer", "yearSeason", "locationX", "locationY", "typeEvent")] %>%
+  left_join(salary_data1, by = c("namePlayer", "yearSeason")) # Joins salary data to shot location data, by player and year
+
+# Cleaning Data
+salary_data1$adjSalary <- str_replace_all(salary_data1$adjSalary, ",", "") # Remove commas
+salary_data1$adjSalary <- str_replace_all(salary_data1$adjSalary, "\\$", "") # Remove dollar signs
+salary_data1$adjSalary <- as.numeric(salary_data1$adjSalary) # Make salaries numeric
+salary_data1 <- salary_data1 %>% filter(!is.na(adjSalary)) # Remove NA values
+
+# Plot for shots made, by salary
+salary_data_made <- salary_data1 %>% filter(typeEvent == "Made Shot") # Keeps data only if the shot was made
+
+p1 <- ggplot(salary_data_made, aes(x=locationX, y=locationY)) + # Plots shot location
+      ggtitle("Shots Made") +
+      facet_wrap(vars(yearSeason)) + # Creates a separate plot for each year
+      annotation_custom(court, -250, 250, -50, 420) + # Plots the court
+      geom_point(aes(color = adjSalary), alpha = .7, size = .4) + # Color of points is the player's salary, adjusted for inflation
+      scale_color_gradient(high = "#00471B", low = "#EEE1C8",
+                           name = "Salary (Adjusted for Inflation)", # Changes legend title
+                           breaks = c(1e+07, 2e+07, 3e+07),
+                           labels=c("$10,000", "$20,000", "$30,000")) + # Changes legend labels to be reader friendly
+      xlim(-250, 250) +
+      ylim(-50, 420) +
+      theme(axis.title.x = element_blank(),
+             axis.title.y = element_blank(),
+             axis.text.x = element_blank(),
+             axis.text.y = element_blank()) +
+     coord_fixed()
+
+# Plot for shots missed, by salary
+salary_data_missed <- salary_data1 %>% filter(typeEvent == "Missed Shot") # Keeps data only if the shot was missed
+
+p2 <- ggplot(salary_data_missed, aes(x=locationX, y=locationY)) + 
+      ggtitle("Shots Missed") +
+      facet_wrap(vars(yearSeason)) +
+      annotation_custom(court, -250, 250, -50, 420) +
+      geom_point(aes(color = adjSalary), alpha = .7, size = .4) +
+      scale_color_gradient(high = "#00471B", low = "#EEE1C8",
+                           name = "Salary (Adjusted for Inflation)",
+                           breaks = c(1e+07, 2e+07, 3e+07),
+                           labels=c("$10,000", "$20,000", "$30,000")) +
+      xlim(-250, 250) +
+      ylim(-50, 420) +
+      theme(axis.title.x = element_blank(),
+             axis.title.y = element_blank(),
+             axis.text.x = element_blank(),
+             axis.text.y = element_blank()) +
+      coord_fixed()
+
+grid.arrange(p1, p2)
+
+}
+
+yrs <- c(2000, 2010, 2020)
+teamsdata2(yrs)
+
+```
+
+
+Salaries used in these graphics have been adjusted for inflation for comparison of player salaries overs years. As shown by the increase in dark green points in 2020, the highest paid players in 2020 make more than in 2000 and 2010. Players in 2000 also tended to be paid more than players in 2010, indicated by an overall darker shading on the plot. The shading of the points appears to be similar in the plots for shots made and shots missed, so there doesn't seem to be a notable relationship between salaries of players and whether or not they made a shot.
+
